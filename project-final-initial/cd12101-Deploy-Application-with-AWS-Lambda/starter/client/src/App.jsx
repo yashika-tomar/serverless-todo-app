@@ -9,7 +9,22 @@ import { NotFound } from './components/NotFound'
 import { Todos } from './components/Todos'
 
 export default function App() {
-  const { isAuthenticated, loginWithRedirect, logout } = useAuth0()
+  const { getAccessTokenSilently } = useAuth0();
+
+  // TEMP – expose it for console usage
+  window.getAccessToken = async () => {
+    const token = await getAccessTokenSilently({
+      audience: "https://todo-api-dev/"
+    });
+    console.log("ACCESS TOKEN:", token);
+    return token;
+  };
+  const auth0 = useAuth0();
+
+  // DEBUG helper (remove for production)
+  window.auth0Client = auth0;
+
+  const { isAuthenticated, loginWithRedirect, logout } = auth0;
 
   function generateMenu() {
     return (
@@ -22,6 +37,7 @@ export default function App() {
       </Menu>
     )
   }
+
 
   function logInLogOutButton() {
     if (isAuthenticated) {

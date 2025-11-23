@@ -10,6 +10,11 @@ provider:
   runtime: nodejs16.x
   stage: dev
   region: us-east-1
+
+  tracing:          # ← REQUIRED for X-Ray
+    lambda: true
+    apiGateway: true
+
   environment:
     TODOS_TABLE: ${self:service}-todos-${self:provider.stage}
     TODOS_CREATED_AT_INDEX: CreatedAtIndex
@@ -28,8 +33,14 @@ functions:
       - http:
           method: get
           path: todos
-          cors: true
           authorizer: Auth
+          cors:
+            origin: "*"
+            headers: "*"
+            allowCredentials: true
+            methods:
+              - GET
+              - OPTIONS
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -44,8 +55,17 @@ functions:
       - http:
           method: post
           path: todos
-          cors: true
           authorizer: Auth
+          cors:
+            origin: "*"
+            headers: "*"
+            allowCredentials: true
+            methods:
+              - POST
+              - OPTIONS
+          request:
+            schemas:
+              application/json: ${file(models/createTodoSchema.json)}    
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -58,8 +78,17 @@ functions:
       - http:
           method: patch
           path: todos/{todoId}
-          cors: true
           authorizer: Auth
+          cors:
+            origin: "*"
+            headers: "*"
+            allowCredentials: true
+            methods:
+              - PATCH
+              - OPTIONS
+          request:
+            schemas:
+              application/json: ${file(models/updateTodoSchema.json)}    
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -72,8 +101,14 @@ functions:
       - http:
           method: delete
           path: todos/{todoId}
-          cors: true
           authorizer: Auth
+          cors:
+            origin: "*"
+            headers: "*"
+            allowCredentials: true
+            methods:
+              - DELETE
+              - OPTIONS
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -86,8 +121,14 @@ functions:
       - http:
           method: post
           path: todos/{todoId}/attachment
-          cors: true
           authorizer: Auth
+          cors:
+            origin: "*"
+            headers: "*"
+            allowCredentials: true
+            methods:
+              - POST
+              - OPTIONS
     iamRoleStatements:
       - Effect: Allow
         Action:
@@ -98,7 +139,6 @@ functions:
 resources:
   Resources:
 
- 
     TodosTable:
       Type: AWS::DynamoDB::Table
       Properties:

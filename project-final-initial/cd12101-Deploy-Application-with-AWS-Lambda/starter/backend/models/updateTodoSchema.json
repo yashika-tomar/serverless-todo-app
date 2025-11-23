@@ -1,0 +1,10 @@
+{
+  "type": "object",
+  "properties": {
+    "name": { "type": "string" },
+    "dueDate": { "type": "string", "format": "date" },
+    "done": { "type": "boolean" }
+  },
+  "required": ["name", "dueDate", "done"],
+  "additionalProperties": false
+}
