@@ -14,6 +14,12 @@ provider:
   tracing:          # ← REQUIRED for X-Ray
     lambda: true
     apiGateway: true
+    
+  iamRoleStatements:
+    - Effect: Allow
+      Action:
+        - cloudwatch:PutMetricData
+      Resource: "*"    
 
   environment:
     TODOS_TABLE: ${self:service}-todos-${self:provider.stage}
@@ -48,6 +54,11 @@ functions:
         Resource:
           - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
           - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}/index/${self:provider.environment.TODOS_CREATED_AT_INDEX}
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - cloudwatch:PutMetricData      # ← REQUIRED here
+        Resource: "*"    
 
   CreateTodo:
     handler: src/lambda/http/createTodo.handler
@@ -71,6 +82,11 @@ functions:
         Action:
           - dynamodb:PutItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - cloudwatch:PutMetricData      # ← REQUIRED here
+        Resource: "*"         
 
   UpdateTodo:
     handler: src/lambda/http/updateTodo.handler
@@ -94,6 +110,11 @@ functions:
         Action:
           - dynamodb:UpdateItem
         Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - cloudwatch:PutMetricData      # ← REQUIRED here
+        Resource: "*"         
 
   DeleteTodo:
     handler: src/lambda/http/deleteTodo.handler
@@ -115,6 +136,11 @@ functions:
         - dynamodb:DeleteItem
         Resource:
         - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - cloudwatch:PutMetricData      # ← REQUIRED here
+        Resource: "*"         
 
   GenerateUploadUrl:
     handler: src/lambda/http/generateUploadUrl.handler
@@ -136,6 +162,16 @@ functions:
           - s3:PutObject
           - s3:GetObject
         Resource: arn:aws:s3:::${self:provider.environment.ATTACHMENTS_BUCKET}/*
+      - Effect: Allow
+        Action:
+          - dynamodb:PutItem
+          - cloudwatch:PutMetricData      # ← REQUIRED here
+        Resource: "*"   
+      - Effect: Allow
+        Action:
+        - dynamodb:UpdateItem
+        Resource:
+        - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}        
 
 resources:
   Resources:

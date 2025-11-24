@@ -51,15 +51,15 @@ export const handler = async (event) => {
     await docClient.update({
       TableName: todosTable,
       Key: { userId, todoId },
-      UpdateExpression:
-        'set #name = :name, dueDate = :dueDate, done = :done',
+      UpdateExpression: 'set #name = :name, dueDate = :dueDate, done = :done, attachmentUrl = :attachmentUrl',
       ExpressionAttributeNames: {
         '#name': 'name'
       },
       ExpressionAttributeValues: {
         ':name': updatedTodo.name,
         ':dueDate': updatedTodo.dueDate,
-        ':done': updatedTodo.done
+        ':done': updatedTodo.done,
+        ':attachmentUrl': updatedTodo.attachmentUrl || null
       },
       ReturnValues: 'UPDATED_NEW'
     }).promise()

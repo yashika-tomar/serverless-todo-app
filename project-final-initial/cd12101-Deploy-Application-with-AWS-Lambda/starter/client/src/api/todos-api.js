@@ -1,4 +1,4 @@
-import { apiEndpoint, authConfig } from '../config'
+import { apiEndpoint } from '../config'
 import Axios from 'axios'
 
 export async function getTodos(idToken) {
@@ -15,22 +15,31 @@ export async function getTodos(idToken) {
 }
 
 export async function createTodo(idToken, newTodo) {
-  const response = await Axios.post(`${apiEndpoint}/todos`, JSON.stringify(newTodo), {
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${idToken}`
+  const response = await Axios.post(
+    `${apiEndpoint}/todos`,
+    JSON.stringify(newTodo),
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${idToken}`
+      }
     }
-  })
+  )
   return response.data.item
 }
 
+
 export async function patchTodo(idToken, todoId, updatedTodo) {
-  await Axios.patch(`${apiEndpoint}/todos/${todoId}`, JSON.stringify(updatedTodo), {
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${idToken}`
+  await Axios.patch(
+    `${apiEndpoint}/todos/${todoId}`,
+    JSON.stringify(updatedTodo),
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${idToken}`
+      }
     }
-  })
+  )
 }
 
 export async function deleteTodo(idToken, todoId) {
@@ -42,6 +51,7 @@ export async function deleteTodo(idToken, todoId) {
   })
 }
 
+
 export async function getUploadUrl(idToken, todoId) {
   const response = await Axios.post(
     `${apiEndpoint}/todos/${todoId}/attachment`,
@@ -49,7 +59,7 @@ export async function getUploadUrl(idToken, todoId) {
     {
       headers: {
         'Content-Type': 'application/json',
-        Authorization: `Bearer ${idToken}`   // 🔥 FIXED
+        Authorization: `Bearer ${idToken}`
       }
     }
   )
@@ -58,5 +68,11 @@ export async function getUploadUrl(idToken, todoId) {
 }
 
 export async function uploadFile(uploadUrl, file) {
-  await Axios.put(uploadUrl, file)
+  await fetch(uploadUrl, {
+    method: 'PUT',
+    body: file,
+    headers: {
+      'Content-Type': file.type
+    }
+  })
 }
