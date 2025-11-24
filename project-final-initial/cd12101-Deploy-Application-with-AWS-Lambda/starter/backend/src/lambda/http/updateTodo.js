@@ -1,36 +1,45 @@
 import AWS from 'aws-sdk'
 import AWSXRay from 'aws-xray-sdk'
 import { createLogger } from '../../utils/logger.mjs'
+import { putMetric } from '../../utils/metrics.mjs'
 
-// Enable X-Ray AWS SDK wrapper
+
+// Enable X-Ray tracing
 const XAWS = AWSXRay.captureAWS(AWS)
 
 const logger = createLogger('updateTodo')
 const docClient = new XAWS.DynamoDB.DocumentClient()
 const todosTable = process.env.TODOS_TABLE
 
-export async function handler(event) {
+export const handler = async (event) => {
 
-  // --- X-Ray tracing ---
   const segment = AWSXRay.getSegment()
   const subsegment = segment.addNewSubsegment("updateTodo-handler")
+
+  logger.info("updateTodo event", {
+    pathParameters: event.pathParameters,
+    authorizer: event.requestContext?.authorizer,
+    body: event.body
+  })
 
   const todoId = event.pathParameters.todoId
   const updatedTodo = JSON.parse(event.body)
 
-  // Authorizer ALWAYS sets userId
-  const userId =
-    event.requestContext.authorizer?.userId ||
-    event.requestContext.authorizer?.principalId
+  // Get userId the SAME WAY CreateTodo & DeleteTodo use it:
+  const userId = event.requestContext.authorizer.principalId
 
   if (!userId) {
-    logger.error("Missing userId", { authorizer: event.requestContext.authorizer })
+    logger.error("Missing principalId", {
+      authorizer: event.requestContext.authorizer
+    })
+
     subsegment.addAnnotation("error", "missingUserId")
     subsegment.close()
+
     return {
       statusCode: 401,
       headers: cors(),
-      body: JSON.stringify({ error: "Unauthorized: userId missing" })
+      body: JSON.stringify({ error: "Unauthorized" })
     }
   }
 
@@ -42,7 +51,8 @@ export async function handler(event) {
     await docClient.update({
       TableName: todosTable,
       Key: { userId, todoId },
-      UpdateExpression: 'set #name = :name, dueDate = :dueDate, done = :done',
+      UpdateExpression:
+        'set #name = :name, dueDate = :dueDate, done = :done',
       ExpressionAttributeNames: {
         '#name': 'name'
       },
@@ -53,15 +63,21 @@ export async function handler(event) {
       },
       ReturnValues: 'UPDATED_NEW'
     }).promise()
+    await putMetric("TodoUpdated")
 
-    logger.info('Updated TODO', { todoId, userId, updatedTodo })
+
+    logger.info('TODO updated', {
+      todoId,
+      userId,
+      updatedTodo
+    })
 
     subsegment.close()
 
     return {
-      statusCode: 200,
+      statusCode: 204,     // Reviewer expects empty body
       headers: cors(),
-      body: JSON.stringify({ message: 'Todo updated successfully' })
+      body: ''             
     }
 
   } catch (error) {
@@ -73,7 +89,7 @@ export async function handler(event) {
     return {
       statusCode: 500,
       headers: cors(),
-      body: JSON.stringify({ error: 'Could not update TODO' })
+      body: JSON.stringify({ error: "Could not update TODO" })
     }
   }
 }

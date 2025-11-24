@@ -112,8 +112,9 @@ functions:
     iamRoleStatements:
       - Effect: Allow
         Action:
-          - dynamodb:DeleteItem
-        Resource: arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
+        - dynamodb:DeleteItem
+        Resource:
+        - arn:aws:dynamodb:${self:provider.region}:*:table/${self:provider.environment.TODOS_TABLE}
 
   GenerateUploadUrl:
     handler: src/lambda/http/generateUploadUrl.handler

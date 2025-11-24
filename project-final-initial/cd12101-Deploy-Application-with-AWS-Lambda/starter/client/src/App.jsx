@@ -9,22 +9,23 @@ import { NotFound } from './components/NotFound'
 import { Todos } from './components/Todos'
 
 export default function App() {
-  const { getAccessTokenSilently } = useAuth0();
+  const { getAccessTokenSilently } = useAuth0()
 
-  // TEMP – expose it for console usage
+  // Expose helper for debugging
   window.getAccessToken = async () => {
     const token = await getAccessTokenSilently({
-      audience: "https://todo-api-dev/"
-    });
-    console.log("ACCESS TOKEN:", token);
-    return token;
-  };
-  const auth0 = useAuth0();
+      audience: "https://todo-api-dev/",
+      scope: "openid profile email"
+    })
+    console.log("ACCESS TOKEN:", token)
+    return token
+  }
 
-  // DEBUG helper (remove for production)
-  window.auth0Client = auth0;
+  const auth0 = useAuth0()
+  const { isAuthenticated, loginWithRedirect, logout } = auth0
 
-  const { isAuthenticated, loginWithRedirect, logout } = auth0;
+  // Debug helper
+  window.auth0Client = auth0
 
   function generateMenu() {
     return (
@@ -38,17 +39,25 @@ export default function App() {
     )
   }
 
-
   function logInLogOutButton() {
     if (isAuthenticated) {
       return (
-        <Menu.Item name="logout" onClick={() => logout({ returnTo: window.location.origin })}>
+        <Menu.Item
+          name="logout"
+          onClick={() => logout({ returnTo: window.location.origin })}
+        >
           Log Out
         </Menu.Item>
       )
     } else {
       return (
-        <Menu.Item name="login" onClick={() => loginWithRedirect()}>
+        <Menu.Item
+          name="login"
+          onClick={() => loginWithRedirect({
+            audience: "https://todo-api-dev/",
+            scope: "openid profile email"
+          })}
+        >
           Log In
         </Menu.Item>
       )

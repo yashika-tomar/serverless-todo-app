@@ -17,9 +17,12 @@ import { deleteTodo, getTodos, patchTodo } from '../api/todos-api'
 import { NewTodoInput } from './NewTodoInput'
 
 export function Todos() {
-  const { user, getAccessTokenSilently } = useAuth0()
+  const { getAccessTokenSilently } = useAuth0()
+
   const [todos, setTodos] = useState([])
   const [loadingTodos, setLoadingTodos] = useState(true)
+  const [creating, setCreating] = useState(false)
+
   const navigate = useNavigate()
 
   useEffect(() => {
@@ -41,6 +44,7 @@ export function Todos() {
     loadTodos()
   }, [getAccessTokenSilently])
 
+  // DELETE TODO
   async function onTodoDelete(todoId) {
     try {
       const token = await getAccessTokenSilently({
@@ -54,6 +58,7 @@ export function Todos() {
     }
   }
 
+  // TOGGLE DONE
   async function onTodoCheck(pos) {
     try {
       const todo = todos[pos]
@@ -78,8 +83,21 @@ export function Todos() {
     }
   }
 
+  // PENCIL BUTTON → UPLOAD PAGE
   function onEditButtonClick(todoId) {
     navigate(`/todos/${todoId}/edit`)
+  }
+
+  // CREATE TODO
+  async function handleNewTodo(newTodoData) {
+    try {
+      setCreating(true)
+      setTodos([...todos, newTodoData])
+    } catch (e) {
+      alert('Todo creation failed')
+    } finally {
+      setCreating(false)
+    }
   }
 
   function renderTodos() {
@@ -92,6 +110,7 @@ export function Todos() {
       <Grid padded>
         {todos.map((todo, pos) => (
           <Grid.Row key={todo.todoId}>
+            {/* Checkbox */}
             <Grid.Column width={1} verticalAlign="middle">
               <Checkbox
                 onChange={() => onTodoCheck(pos)}
@@ -99,25 +118,34 @@ export function Todos() {
               />
             </Grid.Column>
 
+            {/* Name */}
             <Grid.Column width={10} verticalAlign="middle">
               {todo.name}
             </Grid.Column>
 
-            <Grid.Column width={3}>{todo.dueDate}</Grid.Column>
+            {/* Due date */}
+            <Grid.Column width={3} verticalAlign="middle">
+              {todo.dueDate}
+            </Grid.Column>
 
-            <Grid.Column width={1}>
+            {/* Pencil = Upload Attachment */}
+            <Grid.Column width={1} verticalAlign="middle">
               <Button icon color="blue" onClick={() => onEditButtonClick(todo.todoId)}>
                 <Icon name="pencil" />
               </Button>
             </Grid.Column>
 
-            <Grid.Column width={1}>
+            {/* Delete */}
+            <Grid.Column width={1} verticalAlign="middle">
               <Button icon color="red" onClick={() => onTodoDelete(todo.todoId)}>
                 <Icon name="delete" />
               </Button>
             </Grid.Column>
 
-            {todo.attachmentUrl && <Image src={todo.attachmentUrl} size="small" />}
+            {/* Show attachment */}
+            {todo.attachmentUrl && (
+              <Image src={todo.attachmentUrl} size="small" />
+            )}
 
             <Grid.Column width={16}>
               <Divider />
@@ -131,7 +159,7 @@ export function Todos() {
   return (
     <div>
       <Header as="h1">TODOs</Header>
-      <NewTodoInput onNewTodo={(todo) => setTodos([...todos, todo])} />
+      <NewTodoInput onNewTodo={handleNewTodo} creating={creating} />
       {renderTodos()}
     </div>
   )

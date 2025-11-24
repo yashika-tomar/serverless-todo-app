@@ -38,12 +38,15 @@ export async function handler(event) {
   }
 
   const params = {
-    TableName: TODOS_TABLE,
-    KeyConditionExpression: 'userId = :userId',
-    ExpressionAttributeValues: {
-      ':userId': userId
-    }
-  }
+  TableName: TODOS_TABLE,
+  IndexName: TODOS_CREATED_AT_INDEX,   // ← THE MISSING LINE
+  KeyConditionExpression: 'userId = :userId',
+  ExpressionAttributeValues: {
+    ':userId': userId
+  },
+  ScanIndexForward: false // optional: get newest first
+}
+
 
   try {
     subsegment.addAnnotation("userId", userId)

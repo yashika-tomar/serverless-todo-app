@@ -1,6 +1,8 @@
 import AWS from 'aws-sdk'
 import AWSXRay from 'aws-xray-sdk'
 import { createLogger } from '../../utils/logger.mjs'
+import { putMetric } from '../../utils/metrics.mjs'
+
 
 // Enable X-Ray for all AWS services
 const XAWS = AWSXRay.captureAWS(AWS)
@@ -11,9 +13,13 @@ const todosTable = process.env.TODOS_TABLE
 
 export async function handler(event) {
 
-  // X-Ray tracing segment
   const segment = AWSXRay.getSegment()
   const subsegment = segment.addNewSubsegment("deleteTodo-handler")
+
+  logger.info('deleteTodo event', {
+    pathParameters: event.pathParameters,
+    authorizer: event.requestContext?.authorizer
+  })
 
   const todoId = event.pathParameters.todoId
 
@@ -27,10 +33,12 @@ export async function handler(event) {
     await docClient.delete({
       TableName: todosTable,
       Key: {
-        userId: userId,
-        todoId: todoId
+        userId,
+        todoId
       }
     }).promise()
+    await putMetric("TodoDeleted")
+
 
     logger.info('Deleted TODO', { todoId, userId })
 

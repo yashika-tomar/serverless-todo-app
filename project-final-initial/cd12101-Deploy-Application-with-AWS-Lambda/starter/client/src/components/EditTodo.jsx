@@ -2,7 +2,7 @@ import { useAuth0 } from '@auth0/auth0-react'
 import React, { useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { Button, Form } from 'semantic-ui-react'
-import { getUploadUrl, uploadFile } from '../api/todos-api'
+import { getUploadUrl } from '../api/todos-api'   // <-- removed uploadFile import
 
 const UploadState = {
   NoUpload: 'NoUpload',
@@ -42,14 +42,22 @@ export function EditTodo() {
       }
 
       setUploadState(UploadState.FetchingPresignedUrl)
+
       const accessToken = await getAccessTokenSilently({
-        audience: process.env.REACT_APP_AUTH0_AUDIENCE,
-        scope: 'write:todos'
+        audience: process.env.REACT_APP_AUTH0_AUDIENCE
+        
       })
+
+      // Step 1: get presigned URL
       const uploadUrl = await getUploadUrl(accessToken, todoId)
 
+      // Step 2: upload RAW file (Fix 3 applied here)
       setUploadState(UploadState.UploadingFile)
-      await uploadFile(uploadUrl, file)
+
+      await fetch(uploadUrl, {
+        method: 'PUT',
+        body: file
+      })
 
       alert('File was uploaded!')
     } catch (e) {

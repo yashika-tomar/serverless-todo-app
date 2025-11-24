@@ -2,6 +2,8 @@ import AWS from 'aws-sdk'
 import AWSXRay from 'aws-xray-sdk'
 import { v4 as uuid } from 'uuid'
 import { createLogger } from '../../utils/logger.mjs'
+import { putMetric } from '../../utils/metrics.mjs'
+
 
 // Enable X-Ray tracing for AWS services
 const XAWS = AWSXRay.captureAWS(AWS)
@@ -24,22 +26,19 @@ export async function handler(event) {
   try {
     const auth = event.requestContext?.authorizer
 
-    const userId =
-      event.requestContext.authorizer.userId ||
-      event.requestContext.authorizer.principalId
+    const authorizer = event.requestContext?.authorizer || {};
 
-    if (!userId) {
-      logger.error("Missing userId from authorizer", { auth })
+const userId = authorizer.principalId;
 
-      subsegment.addAnnotation("missingUserId", true)
-      subsegment.close()
+if (!userId) {
+  logger.error("Missing principalId from authorizer", { authorizer });
+  return {
+    statusCode: 401,
+    headers: corsHeaders(),
+    body: JSON.stringify({ error: "Unauthorized: userId missing" })
+  };
+}
 
-      return {
-        statusCode: 401,
-        headers: corsHeaders(),
-        body: JSON.stringify({ error: "Unauthorized: userId missing" })
-      }
-    }
 
     subsegment.addAnnotation("userId", userId)
     subsegment.addAnnotation("action", "createTodo")
@@ -61,6 +60,8 @@ export async function handler(event) {
       TableName: todosTable,
       Item: todoItem
     }).promise()
+    await putMetric("TodoCreated")
+
 
     subsegment.close()
 

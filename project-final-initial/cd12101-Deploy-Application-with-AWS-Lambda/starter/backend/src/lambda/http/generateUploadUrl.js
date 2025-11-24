@@ -2,18 +2,34 @@ import AWS from 'aws-sdk'
 import { createLogger } from '../../utils/logger.mjs'
 
 const logger = createLogger('generateUploadUrl')
-const s3 = new AWS.S3({ signatureVersion: 'v4' })
+
+const s3 = new AWS.S3({
+  signatureVersion: 'v4'
+})
+
 const bucketName = process.env.ATTACHMENTS_BUCKET
-const urlExpiration = process.env.URL_EXPIRATION || 300 // 5 minutes
+const urlExpiration = process.env.URL_EXPIRATION || 300
 
 export async function handler(event) {
   const todoId = event.pathParameters.todoId
 
-  // FIX: Must use context.userId (NOT principalId)
-  const userId = event.requestContext.authorizer.userId
+  // ✔ FIX: Always use principalId (same as Create/Delete/Update)
+  const userId = event.requestContext.authorizer.principalId
+
+  if (!userId) {
+    logger.error("Missing principalId in authorizer", {
+      authorizer: event.requestContext.authorizer
+    })
+
+    return {
+      statusCode: 401,
+      headers: cors(),
+      body: JSON.stringify({ error: "Unauthorized" })
+    }
+  }
 
   try {
-    // Save file inside a folder named after the user
+    // Store file as userId/todoId
     const attachmentKey = `${userId}/${todoId}`
 
     const uploadUrl = s3.getSignedUrl('putObject', {
@@ -22,14 +38,15 @@ export async function handler(event) {
       Expires: Number(urlExpiration)
     })
 
-    logger.info("Generated upload URL", { userId, todoId })
+    logger.info("Generated upload URL", {
+      userId,
+      todoId,
+      attachmentKey
+    })
 
     return {
       statusCode: 200,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Credentials": true
-      },
+      headers: cors(),
       body: JSON.stringify({ uploadUrl })
     }
 
@@ -38,11 +55,15 @@ export async function handler(event) {
 
     return {
       statusCode: 500,
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Credentials": true
-      },
+      headers: cors(),
       body: JSON.stringify({ error: "Could not generate upload URL" })
     }
+  }
+}
+
+function cors() {
+  return {
+    "Access-Control-Allow-Origin": "*",
+    "Access-Control-Allow-Credentials": true
   }
 }
